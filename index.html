@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RoadBuddy</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
+.screen{display:none;min-height:100vh;padding:20px 16px}
+.screen.active{display:flex;flex-direction:column}
+.logo{font-size:26px;font-weight:700;color:#ff6a00;letter-spacing:1px}
+.logo span{color:#f0f0f0}
+.tagline{font-size:13px;color:#888;margin-top:3px}
+.card{background:#1a1a1a;border:0.5px solid #2e2e2e;border-radius:14px;padding:18px}
+.btn{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#ff6a00;color:#fff}
+.btn-primary:hover{background:#e55e00}
+.btn-outline{background:transparent;border:1.5px solid #ff6a00;color:#ff6a00}
+.btn-outline:hover{background:#ff6a0015}
+.btn-tech{background:#1e3a5f;color:#7eb8f7;border:1.5px solid #2d5fa0}
+.btn-sm{padding:8px 14px;width:auto;font-size:13px;border-radius:8px}
+input,select,textarea{width:100%;padding:11px 14px;border-radius:9px;border:0.5px solid #2e2e2e;background:#111;color:#f0f0f0;font-size:14px;margin-top:6px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#ff6a00}
+select option{background:#1a1a1a}
+label{font-size:13px;color:#aaa;display:block;margin-top:14px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-orange{background:#ff6a0020;color:#ff6a00;border:1px solid #ff6a0040}
+.badge-blue{background:#1e3a5f;color:#7eb8f7;border:1px solid #2d5fa0}
+.badge-green{background:#0d2e1a;color:#4caf50;border:1px solid #2a6b3a}
+h2{font-size:20px;font-weight:600;margin-bottom:4px}
+h3{font-size:16px;font-weight:600}
+p.sub{font-size:13px;color:#888;margin-bottom:16px}
+.divider{border:none;border-top:0.5px solid #2e2e2e;margin:14px 0}
+.row{display:flex;gap:10px;align-items:center}
+.avatar{width:40px;height:40px;border-radius:50%;background:#ff6a0020;border:1.5px solid #ff6a0060;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.avatar.tech{background:#1e3a5f;border-color:#2d5fa0}
+.pulse{animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.timer-bar{height:4px;border-radius:2px;background:#2e2e2e;margin-top:8px;overflow:hidden}
+.timer-fill{height:100%;background:#ff6a00;transition:width .5s linear}
+.img-preview{width:100%;height:110px;border-radius:9px;background:#111;border:0.5px dashed #333;display:flex;align-items:center;justify-content:center;color:#555;font-size:13px;margin-top:6px;cursor:pointer;overflow:hidden}
+.img-preview img{width:100%;height:100%;object-fit:cover;border-radius:9px}
+#photoInput{display:none}
+.searching-ring{width:64px;height:64px;border-radius:50%;border:3px solid #ff6a0030;border-top:3px solid #ff6a00;animation:spin 1s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.otp-boxes{display:flex;gap:8px;margin-top:8px}
+.otp-boxes input{width:44px;height:44px;text-align:center;font-size:18px;font-weight:700;padding:0;border-radius:8px}
+.tech-req-card{background:#111;border:0.5px solid #2d5fa0;border-radius:12px;padding:14px;margin-top:10px}
+.eta-box{background:#0d2e1a;border:0.5px solid #2a6b3a;border-radius:10px;padding:12px;text-align:center;margin-top:10px}
+.loc-box{background:#0d1f2e;border:0.5px solid #1e4060;border-radius:10px;padding:10px;margin-top:10px;display:flex;align-items:center;gap:10px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;flex-shrink:0}
+.history-item{background:#111;border-radius:10px;padding:12px;margin-top:8px;border:0.5px solid #2e2e2e}
+
+/* Notification banner */
+.notif-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
+.notif-popup{background:#1a1a1a;border:1.5px solid #4caf50;border-radius:18px;padding:28px 22px;max-width:340px;width:100%;text-align:center;animation:popIn .35s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.notif-icon{font-size:52px;margin-bottom:12px}
+.notif-title{font-size:20px;font-weight:700;color:#4caf50;margin-bottom:6px}
+.notif-sub{font-size:13px;color:#888;line-height:1.6;margin-bottom:16px}
+.tech-info-card{background:#111;border:0.5px solid #2a6b3a;border-radius:12px;padding:14px;text-align:left;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION OVERLAY (hidden by default) -->
+<div class="notif-overlay" id="notif-overlay" style="display:none">
+  <div class="notif-popup">
+    <div class="notif-icon">🚀</div>
+    <div class="notif-title">Help is On the Way!</div>
+    <div class="notif-sub">A verified technician has accepted your request and is heading to your location.</div>
+    <div class="tech-info-card" id="notif-tech-info">
+      <div style="font-size:13px;color:#888">Loading technician info...</div>
+    </div>
+    <button class="btn btn-primary" onclick="dismissNotif()">Great, I'll Wait!</button>
+  </div>
+</div>
+
+<!-- LANDING -->
+<div class="screen active" id="s-landing" style="align-items:center;justify-content:center;text-align:center;gap:12px">
+  <div style="font-size:52px">🛣️</div>
+  <div class="logo">Road<span>Buddy</span></div>
+  <p style="font-size:14px;color:#888;max-width:280px;line-height:1.6">Stuck on the road? Get verified mechanics to your location in minutes.</p>
+  <div style="width:100%;max-width:340px;margin-top:20px;display:flex;flex-direction:column;gap:10px">
+    <button class="btn btn-primary" onclick="go('s-cust-login')">I Need Help (Customer)</button>
+    <button class="btn btn-tech" onclick="go('s-tech-login')">I'm a Technician</button>
+  </div>
+  <p style="font-size:11px;color:#333;margin-top:30px">Serving you 24/7 on every road</p>
+</div>
+
+<!-- CUSTOMER LOGIN -->
+<div class="screen" id="s-cust-login">
+  <div class="logo">Road<span>Buddy</span></div><p class="tagline">Customer Login</p>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:400px;width:100%">
+    <div class="card" style="margin-top:20px">
+      <h2>Enter your phone</h2><p class="sub">We'll send a verification code</p>
+      <label>Phone Number</label>
+      <div class="row" style="margin-top:6px">
+        <span style="color:#888;font-size:14px;white-space:nowrap">+91</span>
+        <input id="cust-phone" type="tel" placeholder="98XXXXXXXX" maxlength="10" style="margin-top:0"/>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="sendOTP('cust')">Send OTP</button>
+    </div>
+    <div class="card" id="otp-cust-box" style="margin-top:12px;display:none">
+      <h3>Enter OTP</h3><p class="sub">Demo: use <b>1234</b></p>
+      <div class="otp-boxes">
+        <input class="otp-c" maxlength="1" oninput="otpNext(this,'c')"/>
+        <input class="otp-c" maxlength="1" oninput="otpNext(this,'c')"/>
+        <input class="otp-c" maxlength="1" oninput="otpNext(this,'c')"/>
+        <input class="otp-c" maxlength="1" oninput="otpNext(this,'c')"/>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="verifyOTP('cust')">Verify & Continue</button>
+    </div>
+  </div>
+  <button class="btn btn-outline" onclick="go('s-landing')" style="margin-top:12px;max-width:400px">Back</button>
+</div>
+
+<!-- CUSTOMER FORM -->
+<div class="screen" id="s-cust-form">
+  <div class="row" style="justify-content:space-between;margin-bottom:6px">
+    <div><div class="logo">Road<span>Buddy</span></div><p class="tagline">New Request</p></div>
+    <span class="badge badge-orange" id="cust-badge">Customer</span>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding-bottom:20px">
+    <div class="card" style="margin-top:14px">
+      <h3>📍 Your Location</h3>
+      <div id="loc-status" style="font-size:13px;color:#888;margin-top:8px">Not detected yet</div>
+      <div id="loc-coords" style="font-size:11px;color:#555;margin-top:3px"></div>
+      <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="detectLocation()">Detect My Location</button>
+      <label>Or enter manually</label>
+      <input id="loc-manual" type="text" placeholder="Street, Area, City"/>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>🚗 Vehicle Details</h3>
+      <label>Vehicle Type</label>
+      <select id="veh-type">
+        <option value="">-- Select --</option>
+        <option>Car</option><option>Bike</option><option>Scooter</option><option>Auto Rickshaw</option><option>Truck</option>
+      </select>
+      <label>Vehicle Number</label>
+      <input id="veh-num" type="text" placeholder="e.g. WB 12 AB 3456"/>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>🔧 Problem Details</h3>
+      <label>Type of Problem</label>
+      <select id="prob-type">
+        <option value="">-- Select --</option>
+        <option>Flat Tyre</option><option>Dead Battery</option><option>Engine Failure</option>
+        <option>Overheating</option><option>Fuel Empty</option><option>Brake Issue</option><option>Other</option>
+      </select>
+      <label>Describe the problem</label>
+      <textarea id="prob-desc" rows="3" placeholder="Tell us more..."></textarea>
+      <label>Photo of Problem</label>
+      <div class="img-preview" id="img-preview-box" onclick="document.getElementById('photoInput').click()">
+        <span id="img-label" style="display:flex;flex-direction:column;align-items:center;gap:6px;color:#555">
+          <span style="font-size:22px;line-height:1">+</span>
+          <span style="font-size:12px">Tap to upload photo</span>
+        </span>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(event)"/>
+    </div>
+    <button class="btn btn-primary" style="margin-top:18px" onclick="submitRequest()">Search for Technician</button>
+    <button class="btn btn-outline" style="margin-top:10px" onclick="showHistory()">View Past Requests</button>
+  </div>
+</div>
+
+<!-- SEARCHING / WAITING -->
+<div class="screen" id="s-searching" style="align-items:center;justify-content:center;text-align:center">
+  <div class="searching-ring"></div>
+  <h2 style="color:#ff6a00">Finding Technicians...</h2>
+  <p style="color:#888;font-size:13px;margin-top:8px">Notifying verified technicians near you</p>
+  <div style="margin-top:24px;max-width:340px;width:100%">
+    <div class="card">
+      <div class="row"><div style="width:7px;height:7px;border-radius:50%;background:#ff6a00;flex-shrink:0" class="pulse"></div>
+        <span style="font-size:13px;color:#aaa" id="search-status">Searching nearby...</span>
+      </div>
+      <div class="timer-bar" style="margin-top:12px"><div class="timer-fill" id="search-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card" style="margin-top:10px;text-align:left">
+      <div style="font-size:12px;color:#555;margin-bottom:6px">Request ID: <span id="waiting-req-id" style="color:#ff6a00"></span></div>
+      <div style="font-size:12px;color:#888">Waiting for a technician to accept...</div>
+      <div style="font-size:11px;color:#444;margin-top:6px">You'll get a notification the moment someone picks up your request.</div>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER: TECHNICIAN ASSIGNED -->
+<div class="screen" id="s-cust-assigned" style="align-items:center;justify-content:center;text-align:center">
+  <div style="font-size:44px">✅</div>
+  <h2 style="margin-top:12px;color:#4caf50">Help is Coming!</h2>
+  <p style="color:#888;font-size:13px;margin-top:4px">A technician accepted your request</p>
+  <div style="max-width:340px;width:100%;margin-top:20px">
+    <div class="card" id="assigned-tech-card">
+      <div class="row">
+        <div class="avatar tech" style="font-size:18px">🔧</div>
+        <div style="text-align:left">
+          <div style="font-weight:600" id="assigned-tech-name">—</div>
+          <div style="font-size:12px;color:#7eb8f7" id="assigned-tech-spec">—</div>
+        </div>
+        <span class="badge badge-green" style="margin-left:auto">Verified</span>
+      </div>
+      <div class="divider"></div>
+      <div class="eta-box">
+        <div style="font-size:12px;color:#4caf50">Technician is on the way</div>
+        <div style="font-size:13px;color:#aaa;margin-top:6px">Accepted at: <span id="assigned-time">—</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:13px;color:#888">📞 You'll be contacted shortly</div>
+    </div>
+    <button class="btn btn-outline" style="margin-top:12px" onclick="go('s-cust-form')">New Request</button>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="showHistory()">View Past Requests</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="s-history">
+  <div class="logo">Road<span>Buddy</span></div><p class="tagline">Last 3 Requests</p>
+  <div id="history-list" style="margin-top:16px;flex:1;overflow-y:auto"></div>
+  <button class="btn btn-outline" style="margin-top:16px" onclick="go('s-cust-form')">Back</button>
+</div>
+
+<!-- TECH LOGIN -->
+<div class="screen" id="s-tech-login">
+  <div class="logo">Road<span>Buddy</span></div><p class="tagline" style="color:#7eb8f7">Technician Login</p>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;max-width:400px;width:100%">
+    <div class="card" style="margin-top:20px;border-color:#2d5fa0">
+      <h2>Technician Portal</h2><p class="sub">Login with your registered phone</p>
+      <label>Phone Number</label>
+      <div class="row" style="margin-top:6px">
+        <span style="color:#888;font-size:14px">+91</span>
+        <input id="tech-phone" type="tel" placeholder="98XXXXXXXX" maxlength="10" style="margin-top:0"/>
+      </div>
+      <label>Your Name</label>
+      <input id="tech-name-inp" type="text" placeholder="e.g. Ramesh Kumar"/>
+      <label>Specialization</label>
+      <select id="tech-spec-sel">
+        <option>Engine & Tyre Specialist</option><option>Electrician / Battery</option>
+        <option>Brake & Suspension</option><option>General Mechanic</option>
+      </select>
+      <button class="btn btn-tech" style="margin-top:16px;width:100%" onclick="sendOTP('tech')">Send OTP</button>
+    </div>
+    <div class="card" id="otp-tech-box" style="margin-top:12px;display:none;border-color:#2d5fa0">
+      <h3>Enter OTP</h3><p class="sub">Demo: use <b>5678</b></p>
+      <div class="otp-boxes">
+        <input class="otp-t" maxlength="1" oninput="otpNext(this,'t')"/>
+        <input class="otp-t" maxlength="1" oninput="otpNext(this,'t')"/>
+        <input class="otp-t" maxlength="1" oninput="otpNext(this,'t')"/>
+        <input class="otp-t" maxlength="1" oninput="otpNext(this,'t')"/>
+      </div>
+      <button class="btn btn-tech" style="margin-top:14px;width:100%" onclick="verifyOTP('tech')">Verify & Enter Dashboard</button>
+    </div>
+  </div>
+  <button class="btn btn-outline" onclick="go('s-landing')" style="margin-top:12px;max-width:400px">Back</button>
+</div>
+
+<!-- TECH DASHBOARD -->
+<div class="screen" id="s-tech-dash">
+  <div class="row" style="justify-content:space-between;margin-bottom:6px">
+    <div><div class="logo">Road<span>Buddy</span></div><p class="tagline" style="color:#7eb8f7">Technician Dashboard</p></div>
+    <span class="badge badge-blue">🔧 Verified</span>
+  </div>
+  <div class="card" style="margin-top:12px;border-color:#2d5fa0">
+    <div class="row" style="justify-content:space-between">
+      <div class="row" style="gap:10px">
+        <div class="avatar tech">🔧</div>
+        <div><div style="font-weight:600" id="tech-dash-name">Technician</div><div style="font-size:12px;color:#7eb8f7" id="tech-dash-spec">Specialist</div></div>
+      </div>
+      <div class="row" style="gap:6px">
+        <div class="sync-dot pulse" id="sync-dot"></div>
+        <span style="font-size:11px;color:#4caf50" id="sync-label">Live</span>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="justify-content:space-between;margin-top:16px;margin-bottom:4px">
+    <p style="font-size:13px;color:#888">Incoming Requests <span id="req-count" style="color:#ff6a00"></span></p>
+    <button class="btn btn-sm" style="background:#1a1a1a;border:0.5px solid #2e2e2e;color:#aaa;font-size:12px" onclick="refreshTechDash()">↻ Refresh</button>
+  </div>
+  <div id="tech-req-list" style="flex:1;overflow-y:auto;padding-bottom:16px"></div>
+  <div id="tech-no-req" style="text-align:center;color:#444;font-size:13px;margin-top:40px;display:none">
+    <div style="font-size:32px;margin-bottom:8px">🔍</div>
+    No active requests right now.<br/>Auto-refreshing every 5 seconds...
+  </div>
+  <button class="btn btn-outline" style="margin-top:12px" onclick="stopTechPolling();go('s-landing')">Logout</button>
+</div>
+
+<!-- TECH ACCEPTED -->
+<div class="screen" id="s-tech-accepted" style="align-items:center;justify-content:center;text-align:center">
+  <div style="font-size:44px">🚀</div>
+  <h2 style="margin-top:12px;color:#7eb8f7">Job Accepted!</h2>
+  <p style="color:#888;font-size:13px;margin-top:4px">Customer has been notified. Head to their location.</p>
+  <div style="max-width:340px;width:100%;margin-top:20px">
+    <div class="card" id="accepted-detail" style="border-color:#2d5fa0;text-align:left"></div>
+    <button class="btn btn-tech" style="margin-top:12px;width:100%" onclick="go('s-tech-dash')">Back to Dashboard</button>
+  </div>
+</div>
+
+<script>
+const REQ_KEY='rb_shared_requests';
+const NOTIF_KEY='rb_notifications';
+const HIST_KEY='rb_history';
+
+let custPhone='', techPhone='', techNameVal='', techSpecVal='';
+let custLat=null, custLng=null;
+let currentReqId=null;
+let techPollTimer=null, custPollTimer=null, searchAnimTimer=null;
+let techTimers={};
+let notifShown=false;
+
+/* ---- Storage ---- */
+async function sget(k,shared){
+  try{const r=await window.storage.get(k,shared);return r?JSON.parse(r.value):null;}
+  catch(e){
+    try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e2){return null;}
+  }
+}
+async function sset(k,v,shared){
+  try{await window.storage.set(k,JSON.stringify(v),shared);}
+  catch(e){
+    try{localStorage.setItem(k,JSON.stringify(v));}catch(e2){}
+  }
+}
+
+/* ---- Nav ---- */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ---- OTP ---- */
+function sendOTP(type){
+  const ph=document.getElementById(type==='cust'?'cust-phone':'tech-phone').value;
+  if(ph.length<10){alert('Enter a valid 10-digit number');return;}
+  document.getElementById('otp-'+type+'-box').style.display='block';
+  const cls=type==='cust'?'.otp-c':'.otp-t';
+  document.querySelectorAll(cls).forEach(i=>i.value='');
+  document.querySelector(cls).focus();
+}
+function otpNext(el,cls){
+  if(el.value.length===1){const all=[...document.querySelectorAll('.otp-'+cls)];const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+}
+function verifyOTP(type){
+  const cls=type==='cust'?'.otp-c':'.otp-t';
+  const code=[...document.querySelectorAll(cls)].map(i=>i.value).join('');
+  const exp=type==='cust'?'1234':'5678';
+  if(code!==exp){alert('Wrong OTP. Demo: '+exp);return;}
+  if(type==='cust'){
+    custPhone=document.getElementById('cust-phone').value;
+    document.getElementById('cust-badge').textContent='+91 '+custPhone;
+    go('s-cust-form');
+  } else {
+    techPhone=document.getElementById('tech-phone').value;
+    techNameVal=document.getElementById('tech-name-inp').value||'Technician';
+    techSpecVal=document.getElementById('tech-spec-sel').value;
+    document.getElementById('tech-dash-name').textContent=techNameVal;
+    document.getElementById('tech-dash-spec').textContent=techSpecVal;
+    startTechPolling();
+    go('s-tech-dash');
+  }
+}
+
+/* ---- Location ---- */
+function detectLocation(){
+  const st=document.getElementById('loc-status');
+  const co=document.getElementById('loc-coords');
+  st.textContent='Detecting...';st.style.color='#ff6a00';
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      custLat=pos.coords.latitude;custLng=pos.coords.longitude;
+      st.textContent='📍 Location detected';st.style.color='#4caf50';
+      co.textContent=`Lat: ${custLat.toFixed(5)}, Lng: ${custLng.toFixed(5)}`;
+      document.getElementById('loc-manual').value=`Lat: ${custLat.toFixed(5)}, Lng: ${custLng.toFixed(5)}`;
+    },()=>{
+      custLat=22.5726;custLng=88.3639;
+      st.textContent='📍 Kolkata (default)';st.style.color='#aaa';
+      co.textContent=`Lat: 22.57260, Lng: 88.36390`;
+      document.getElementById('loc-manual').value='Kolkata, West Bengal';
+    });
+  } else {
+    custLat=22.5726;custLng=88.3639;
+    st.textContent='📍 Kolkata (default)';st.style.color='#aaa';
+    document.getElementById('loc-manual').value='Kolkata, West Bengal';
+  }
+}
+
+function previewPhoto(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const box=document.getElementById('img-preview-box');
+    box.innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;display:block"/>`;
+  };
+  r.readAsDataURL(file);
+}
+
+/* ---- Submit request ---- */
+async function submitRequest(){
+  const loc=document.getElementById('loc-manual').value||'Unknown Location';
+  const vt=document.getElementById('veh-type').value;
+  const vn=document.getElementById('veh-num').value;
+  const pt=document.getElementById('prob-type').value;
+  const pd=document.getElementById('prob-desc').value;
+  if(!vt||!vn||!pt){alert('Please fill vehicle type, number and problem type.');return;}
+
+  const req={
+    id:'RB'+Date.now(),
+    customer:'+91 '+custPhone,
+    custPhone:custPhone,
+    location:loc,
+    lat:custLat,lng:custLng,
+    mapsLink:custLat?`https://www.google.com/maps?q=${custLat},${custLng}`:null,
+    vehicle:vt+' — '+vn,
+    problem:pt,desc:pd,
+    time:new Date().toLocaleString('en-IN'),
+    status:'pending',
+    acceptedBy:null,
+    techName:null,
+    techSpec:null,
+    acceptedAt:null
+  };
+  currentReqId=req.id;
+  notifShown=false;
+
+  // Navigate immediately — don't let storage errors block the UI
+  document.getElementById('waiting-req-id').textContent=req.id;
+  go('s-searching');
+  runSearchAnim();
+  startCustPolling();
+
+  // Save to shared storage in background (with fallback to localStorage)
+  try{
+    let shared=await sget(REQ_KEY,true)||[];
+    shared.unshift(req);
+    if(shared.length>15)shared=shared.slice(0,15);
+    await sset(REQ_KEY,shared,true);
+  }catch(e){
+    try{
+      let shared=JSON.parse(localStorage.getItem(REQ_KEY)||'[]');
+      shared.unshift(req);
+      if(shared.length>15)shared=shared.slice(0,15);
+      localStorage.setItem(REQ_KEY,JSON.stringify(shared));
+    }catch(e2){}
+  }
+
+  // Save personal history (with fallback)
+  try{
+    let hist=await sget(HIST_KEY,false)||[];
+    hist.unshift({...req});
+    if(hist.length>3)hist=hist.slice(0,3);
+    await sset(HIST_KEY,hist,false);
+  }catch(e){
+    try{
+      let hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]');
+      hist.unshift({...req});
+      if(hist.length>3)hist=hist.slice(0,3);
+      localStorage.setItem(HIST_KEY,JSON.stringify(hist));
+    }catch(e2){}
+  }
+}
+
+function runSearchAnim(){
+  clearInterval(searchAnimTimer);
+  let pct=0;
+  const msgs=['Searching nearby...','Notifying technicians...','Request broadcast live...','Waiting for response...'];
+  let mi=0;
+  searchAnimTimer=setInterval(()=>{
+    pct+=0.6;
+    document.getElementById('search-bar').style.width=Math.min(pct,92)+'%';
+    if(pct%23<0.65&&mi<msgs.length)document.getElementById('search-status').textContent=msgs[mi++];
+    if(pct>=92)clearInterval(searchAnimTimer);
+  },80);
+}
+
+/* ---- Customer polling: watch for technician acceptance ---- */
+function startCustPolling(){
+  stopCustPolling();
+  custPollTimer=setInterval(checkIfAccepted,4000);
+}
+function stopCustPolling(){clearInterval(custPollTimer);}
+
+async function checkIfAccepted(){
+  if(!currentReqId||notifShown)return;
+  const shared=await sget(REQ_KEY,true)||[];
+  const req=shared.find(r=>r.id===currentReqId);
+  if(req&&req.status==='accepted'&&req.techName){
+    notifShown=true;
+    stopCustPolling();
+    clearInterval(searchAnimTimer);
+    showNotification(req);
+  }
+}
+
+/* ---- Notification popup ---- */
+function showNotification(req){
+  document.getElementById('notif-tech-info').innerHTML=`
+    <div class="row" style="margin-bottom:10px">
+      <div class="avatar tech" style="font-size:16px">🔧</div>
+      <div>
+        <div style="font-weight:600;font-size:15px">${req.techName}</div>
+        <div style="font-size:12px;color:#7eb8f7">${req.techSpec}</div>
+      </div>
+      <span class="badge badge-green" style="margin-left:auto">Verified</span>
+    </div>
+    <div style="font-size:12px;color:#888;line-height:1.8">
+      <div>📞 +91 ${req.acceptedBy}</div>
+      <div>Accepted at ${req.acceptedAt}</div>
+    </div>
+  `;
+  document.getElementById('notif-overlay').style.display='flex';
+
+  // Also update the assigned screen
+  document.getElementById('assigned-tech-name').textContent=req.techName;
+  document.getElementById('assigned-tech-spec').textContent=req.techSpec;
+  document.getElementById('assigned-time').textContent=req.acceptedAt;
+}
+
+function dismissNotif(){
+  document.getElementById('notif-overlay').style.display='none';
+  go('s-cust-assigned');
+}
+
+/* ---- Tech polling ---- */
+function startTechPolling(){refreshTechDash();techPollTimer=setInterval(refreshTechDash,5000);}
+function stopTechPolling(){clearInterval(techPollTimer);}
+
+async function refreshTechDash(){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-label');
+  if(dot){dot.style.background='#ff6a00';lbl.textContent='Syncing...';}
+  const list=await sget(REQ_KEY,true)||[];
+  const pending=list.filter(r=>r.status==='pending');
+  if(dot){dot.style.background='#4caf50';lbl.textContent='Live';}
+  const cnt=document.getElementById('req-count');
+  if(cnt)cnt.textContent=pending.length>0?`(${pending.length} new)`:'';
+  renderTechRequests(pending);
+}
+
+function renderTechRequests(list){
+  const cont=document.getElementById('tech-req-list');
+  const noReq=document.getElementById('tech-no-req');
+  if(!cont)return;
+  if(list.length===0){cont.innerHTML='';noReq.style.display='block';return;}
+  noReq.style.display='none';
+  Object.values(techTimers).forEach(t=>clearInterval(t));
+  techTimers={};
+  cont.innerHTML=list.map((r,i)=>`
+    <div class="tech-req-card" id="tcard-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:#7eb8f7;font-weight:600">#${r.id}</span>
+        <span class="badge badge-orange">NEW</span>
+      </div>
+      <div style="margin-top:10px;font-size:13px;line-height:1.9">
+        <div>👤 <span style="color:#ccc">${r.customer}</span></div>
+        <div>🚗 <span style="color:#ccc">${r.vehicle}</span></div>
+        <div>🔧 <span style="color:#ff6a00;font-weight:600">${r.problem}</span></div>
+        ${r.desc?`<div style="color:#666;font-size:12px">${r.desc}</div>`:''}
+        <div style="color:#555;font-size:11px">${r.time}</div>
+      </div>
+      <div class="loc-box">
+        <div style="font-size:18px">📍</div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:#7eb8f7;font-weight:600">Customer Location</div>
+          <div style="font-size:12px;color:#aaa;margin-top:2px">${r.location}</div>
+          ${r.lat?`<div style="font-size:11px;color:#555;margin-top:1px">Lat: ${r.lat.toFixed(5)}, Lng: ${r.lng.toFixed(5)}</div>`:''}
+        </div>
+        ${r.mapsLink?`<a href="${r.mapsLink}" target="_blank" style="background:#0d3320;border:0.5px solid #2a6b3a;color:#4caf50;font-size:12px;font-weight:600;padding:7px 10px;border-radius:8px;text-decoration:none;white-space:nowrap">Maps ↗</a>`:''}
+      </div>
+      <div id="twrap-${i}" style="margin-top:10px">
+        <div style="font-size:11px;color:#888">Accept within: <span id="tc-${i}" style="font-size:14px;font-weight:700;color:#ff6a00">2:00</span></div>
+        <div class="timer-bar"><div class="timer-fill" id="tb-${i}" style="width:100%"></div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="acceptReq('${r.id}',${i})">Accept Job</button>
+        <button class="btn btn-sm" style="background:#2e0d0d;color:#ff5252;border:0.5px solid #6b2a2a" onclick="declineReq(${i})">Decline</button>
+      </div>
+    </div>
+  `).join('');
+  list.forEach((_,i)=>startCardTimer(i));
+}
+
+function startCardTimer(i){
+  let secs=120;
+  techTimers[i]=setInterval(()=>{
+    secs--;
+    const tc=document.getElementById('tc-'+i);
+    const tb=document.getElementById('tb-'+i);
+    if(!tc){clearInterval(techTimers[i]);return;}
+    const m=Math.floor(secs/60),s=secs%60;
+    tc.textContent=m+':'+(s<10?'0':'')+s;
+    if(tb)tb.style.width=(secs/120*100)+'%';
+    if(secs<=0){
+      clearInterval(techTimers[i]);
+      const tw=document.getElementById('twrap-'+i);
+      if(tw)tw.innerHTML='<span style="color:#ff5252;font-size:12px">Request expired</span>';
+    }
+  },1000);
+}
+
+async function acceptReq(reqId,i){
+  clearInterval(techTimers[i]);
+  const acceptedAt=new Date().toLocaleTimeString('en-IN');
+
+  // Update shared storage: mark accepted + write tech info
+  let shared=await sget(REQ_KEY,true)||[];
+  shared=shared.map(r=>r.id===reqId?{
+    ...r,
+    status:'accepted',
+    acceptedBy:techPhone,
+    techName:techNameVal,
+    techSpec:techSpecVal,
+    acceptedAt:acceptedAt
+  }:r);
+  await sset(REQ_KEY,shared,true);
+
+  const req=shared.find(r=>r.id===reqId);
+  if(!req)return;
+
+  // Show technician accepted screen
+  document.getElementById('accepted-detail').innerHTML=`
+    <div class="row" style="margin-bottom:12px">
+      <div class="avatar" style="font-size:18px">👤</div>
+      <div><div style="font-weight:600">${req.customer}</div><div style="font-size:12px;color:#888">Customer</div></div>
+    </div>
+    <div style="font-size:13px;line-height:2">
+      <div>🚗 <b>Vehicle:</b> ${req.vehicle}</div>
+      <div>🔧 <b>Problem:</b> <span style="color:#ff6a00">${req.problem}</span></div>
+      ${req.desc?`<div style="color:#888;font-size:12px">${req.desc}</div>`:''}
+    </div>
+    <div class="loc-box" style="margin-top:12px">
+      <div style="font-size:18px">📍</div>
+      <div style="flex:1">
+        <div style="font-size:12px;color:#7eb8f7;font-weight:600">Navigate to</div>
+        <div style="font-size:13px;color:#ccc;margin-top:2px">${req.location}</div>
+        ${req.lat?`<div style="font-size:11px;color:#555;margin-top:1px">Lat: ${req.lat.toFixed(5)}, Lng: ${req.lng.toFixed(5)}</div>`:''}
+      </div>
+      ${req.mapsLink?`<a href="${req.mapsLink}" target="_blank" style="background:#0d3320;border:0.5px solid #2a6b3a;color:#4caf50;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;text-decoration:none;white-space:nowrap">Open Maps ↗</a>`:''}
+    </div>
+    <div class="eta-box">
+      <div style="font-size:12px;color:#4caf50;font-weight:600">Customer has been notified!</div>
+      <div style="font-size:12px;color:#aaa;margin-top:4px">Job accepted at ${acceptedAt}</div>
+    </div>
+  `;
+  go('s-tech-accepted');
+}
+
+function declineReq(i){
+  clearInterval(techTimers[i]);
+  const card=document.getElementById('tcard-'+i);
+  if(card){card.style.opacity='0.3';card.style.pointerEvents='none';}
+}
+
+async function showHistory(){
+  const list=await sget(HIST_KEY,false)||[];
+  const cont=document.getElementById('history-list');
+  if(list.length===0){cont.innerHTML='<p style="color:#555;text-align:center;margin-top:30px;font-size:13px">No past requests found.</p>';go('s-history');return;}
+
+  // Fetch latest statuses from shared storage
+  const shared=await sget(REQ_KEY,true)||[];
+  const updated=list.map(r=>{const s=shared.find(x=>x.id===r.id);return s||r;});
+
+  cont.innerHTML=updated.map(r=>`
+    <div class="history-item">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:600;color:#ff6a00">#${r.id}</span>
+        <span class="badge ${r.status==='accepted'?'badge-green':'badge-orange'}">${r.status==='accepted'?'✓ Accepted':'Pending'}</span>
+      </div>
+      <div style="font-size:13px;margin-top:8px;line-height:1.9">
+        <div>📍 ${r.location}</div>
+        <div>🚗 ${r.vehicle}</div>
+        <div>🔧 ${r.problem}</div>
+        ${r.status==='accepted'&&r.techName?`<div style="color:#4caf50;font-size:12px">Handled by: ${r.techName}</div>`:''}
+        ${r.mapsLink?`<a href="${r.mapsLink}" target="_blank" style="color:#4caf50;font-size:12px;text-decoration:none">View on Google Maps ↗</a>`:''}
+        <div style="font-size:11px;color:#555">${r.time}</div>
+      </div>
+    </div>
+  `).join('');
+  go('s-history');
+}
+</script>
+</body>
+</html>
